@@ -146,17 +146,4 @@ export const api = {
   ask: (sid: number, question: string) =>
     req("POST", `/subjects/${sid}/ask`, { question }),
 
-  waStart: () => req("POST", "/whatsapp/session"),
-  waStatus: () => req("GET", "/whatsapp/session"),
-  waGroups: () => req("GET", "/whatsapp/groups"),
-  waSenders: (chatId: string) => req("GET", `/whatsapp/senders?chat_id=${encodeURIComponent(chatId)}`),
-  waLogout: () => req("DELETE", "/whatsapp/session"),
-  waLinks: () => req("GET", "/whatsapp/links"),
-  waSetLink: (subjectId: number, body: {
-    chat_id: string; chat_name: string
-    focus_sender?: string | null; focus_sender_name?: string | null
-  }) => req("PUT", `/whatsapp/links/${subjectId}`, body),
-  waClearLink: (subjectId: number) => req("DELETE", `/whatsapp/links/${subjectId}`),
-  waSync: () => req("POST", "/whatsapp/sync"),
-  waContext: (subjectId: number) => req("GET", `/whatsapp/context/${subjectId}`),
 }

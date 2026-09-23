@@ -10,7 +10,6 @@ import { Sidebar } from "./components/Sidebar"
 import { ConnectButton } from "./components/ConnectButton"
 import { ChatBox } from "./components/ChatBox"
 import { BranchPage } from "./pages/BranchPage"
-import { WhatsAppPage } from "./pages/WhatsAppPage"
 import { CalendarPage } from "./pages/CalendarPage"
 import { SettingsPage } from "./pages/SettingsPage"
 import { api } from "./lib/api"
@@ -20,7 +19,6 @@ export type View =
   | { type: "materials"; subjectId: number }
   | { type: "tutor"; subjectId: number }
   | { type: "branch"; branchId: number; subjectId: number }
-  | { type: "whatsapp" }
   | { type: "calendar" }
   | { type: "settings" }
 
@@ -133,8 +131,8 @@ export function Kbd({ children }: { children: React.ReactNode }) {
 export function Pill({ children, tone = "accent" }: { children: React.ReactNode; tone?: "accent" | "teal" | "dim" }) {
   const map = {
     accent: { bg: "var(--accent-soft)", bd: "var(--accent-border)", fg: "var(--accent-bright)" },
-    teal:   { bg: "var(--teal-soft)",   bd: "var(--teal-border)",   fg: "var(--teal)" },
-    dim:    { bg: "var(--surface)",     bd: "var(--surface-border)", fg: "var(--text-faint)" },
+    teal: { bg: "var(--teal-soft)", bd: "var(--teal-border)", fg: "var(--teal)" },
+    dim: { bg: "var(--surface)", bd: "var(--surface-border)", fg: "var(--text-faint)" },
   }[tone]
   return (
     <span className="text-[10px] font-mono px-2 py-0.5 rounded-md whitespace-nowrap"
@@ -165,7 +163,6 @@ function MainContent({ view, onNavigate }: { view: View; onNavigate: (v: View) =
   if (view.type === "materials") return <MaterialsView subjectId={view.subjectId} />
   if (view.type === "tutor") return <TutorView subjectId={view.subjectId} />
   if (view.type === "branch") return <BranchPage id={view.branchId} />
-  if (view.type === "whatsapp") return <WhatsAppPage />
   if (view.type === "calendar") return <CalendarPage />
   if (view.type === "settings") return <SettingsPage />
   return null
@@ -174,21 +171,29 @@ function MainContent({ view, onNavigate }: { view: View; onNavigate: (v: View) =
 function Home({ onNavigate }: { onNavigate: (v: View) => void }) {
   const [first, setFirst] = useState<any>(null)
 
-  useEffect(() => { api.subjects().then(s => setFirst(s[0] ?? null)).catch(() => {}) }, [])
+  useEffect(() => { api.subjects().then(s => setFirst(s[0] ?? null)).catch(() => { }) }, [])
 
   const cards = [
-    { icon: faRobot, badge: "Interactive", tone: "accent" as const, title: "AI Tutor Session",
+    {
+      icon: faRobot, badge: "Interactive", tone: "accent" as const, title: "AI Tutor Session",
       body: "Deep-dive into your notes with answers cited back to the exact source.",
-      go: () => first && onNavigate({ type: "tutor", subjectId: first.id }) },
-    { icon: faFileLines, badge: "Milestones", tone: "accent" as const, title: "Assignments",
+      go: () => first && onNavigate({ type: "tutor", subjectId: first.id })
+    },
+    {
+      icon: faFileLines, badge: "Milestones", tone: "accent" as const, title: "Assignments",
       body: "Track milestones and anchor each draft as proof of your own work.",
-      go: () => {} },
-    { icon: faPaperclip, badge: "Syllabus", tone: "teal" as const, title: "Course Materials",
+      go: () => { }
+    },
+    {
+      icon: faPaperclip, badge: "Syllabus", tone: "teal" as const, title: "Course Materials",
       body: "Lecture notes, slides and readings that ground every tutor answer.",
-      go: () => first && onNavigate({ type: "materials", subjectId: first.id }) },
-    { icon: faLink, badge: "Synced", tone: "teal" as const, title: "On-Chain Verification",
+      go: () => first && onNavigate({ type: "materials", subjectId: first.id })
+    },
+    {
+      icon: faLink, badge: "Synced", tone: "teal" as const, title: "On-Chain Verification",
       body: "Proof-of-work submissions linked to your wallet on BOT Chain.",
-      go: () => {} },
+      go: () => { }
+    },
   ]
 
   return (
