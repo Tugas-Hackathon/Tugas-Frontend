@@ -1,10 +1,30 @@
 import { useState } from "react"
-import { useWriteContract } from "wagmi"
+import { useWriteContract, useChainId, useSwitchChain } from "wagmi"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faArrowUpRightFromSquare } from "@fortawesome/free-solid-svg-icons"
+import { faArrowUpRightFromSquare, faWandMagicSparkles } from "@fortawesome/free-solid-svg-icons"
 import { api } from "../lib/api"
 import { NETWORK } from "../lib/networks"
 import { Pill } from "../App"
+
+/** Retry the backend /anchored call until the node has indexed the receipt.
+ *  The backend does eth_getTransactionReceipt server-side (no CORS), so we
+ *  just need to wait for the RPC to reflect the mined block. */
+async function retryAnchored(
+  milestoneId: number,
+  txHash: string,
+  maxRetries = 20,
+  delayMs = 3000,
+): Promise<unknown> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await api.anchored(milestoneId, txHash)
+    } catch (e: any) {
+      const pending = e.message?.includes("not found") || e.message?.includes("not confirmed")
+      if (!pending || i === maxRetries - 1) throw e
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+}
 
 const ABI = [
   {
@@ -24,13 +44,32 @@ const CONTRACT = import.meta.env.VITE_LEDGER_ADDRESS as `0x${string}`
 
 type Status = "idle" | "hashing" | "awaiting_wallet" | "pending" | "confirmed" | "rejected" | "failed"
 
-export function MilestoneCard({ milestone }: { milestone: any }) {
+interface PolishResult {
+  polished: string
+  changes: string[]
+  added_nothing: boolean
+}
+
+export function MilestoneCard({
+  milestone,
+  onAnchored,
+}: {
+  milestone: any
+  onAnchored?: (id: number, hash: string) => void
+}) {
   const [status, setStatus] = useState<Status>(milestone.tx_hash ? "confirmed" : "idle")
   const [draft, setDraft] = useState(milestone.draft_text ?? "")
   const [brief, setBrief] = useState("")
   const [error, setError] = useState("")
 
+  // Polish (writing assistant) state
+  const [polishing, setPolishing] = useState(false)
+  const [polishResult, setPolishResult] = useState<PolishResult | null>(null)
+  const [polishError, setPolishError] = useState("")
+
   const { writeContractAsync } = useWriteContract()
+  const currentChainId = useChainId()
+  const { switchChainAsync } = useSwitchChain()
 
   async function commit() {
     if (!draft.trim()) return
@@ -40,20 +79,55 @@ export function MilestoneCard({ milestone }: { milestone: any }) {
       const { workHash, contextHash, aiAssistLevel } = await api.hashMilestone(
         milestone.id, draft, brief, "", 60
       )
+
+      // Ensure the wallet is on the contract's network (e.g. BOT Chain Testnet)
+      if (currentChainId !== NETWORK.id && switchChainAsync) {
+        setStatus("awaiting_wallet")
+        try {
+          await switchChainAsync({ chainId: NETWORK.id })
+        } catch (switchErr: any) {
+          throw new Error(`Please switch your wallet network to ${NETWORK.name} in MetaMask`)
+        }
+      }
+
       setStatus("awaiting_wallet")
       const hash = await writeContractAsync({
         address: CONTRACT,
         abi: ABI,
         functionName: "commit",
         args: [workHash as `0x${string}`, contextHash as `0x${string}`, aiAssistLevel],
+        chainId: NETWORK.id,
       })
       setStatus("pending")
-      await api.anchored(milestone.id, hash)
+      // Retry backend call until the RPC has indexed the mined receipt
+      await retryAnchored(milestone.id, hash)
       setStatus("confirmed")
+      onAnchored?.(milestone.id, hash)
     } catch (e: any) {
       setError(e.message)
       setStatus(e.message?.includes("rejected") ? "rejected" : "failed")
     }
+  }
+
+  async function polish() {
+    if (!draft.trim() || polishing) return
+    setPolishError("")
+    setPolishResult(null)
+    setPolishing(true)
+    try {
+      const result = await api.polishMilestone(milestone.id, draft)
+      setPolishResult(result)
+    } catch (e: any) {
+      setPolishError(e.message)
+    } finally {
+      setPolishing(false)
+    }
+  }
+
+  function applyPolish() {
+    if (!polishResult) return
+    setDraft(polishResult.polished)
+    setPolishResult(null)
   }
 
   const statusColor: Record<Status, string> = {
@@ -105,6 +179,45 @@ export function MilestoneCard({ milestone }: { milestone: any }) {
         className="w-full rounded-xl px-4 py-3 text-sm resize-none mb-2.5 outline-none disabled:opacity-60"
         style={{ background: "var(--input-bg)", color: "var(--text)", border: "1px solid var(--input-border)" }} />
 
+      {/* Polish result panel */}
+      {polishResult && (
+        <div className="rounded-xl px-4 py-3 mb-3 text-sm"
+          style={{ background: "var(--input-bg)", border: "1px solid var(--accent-border)" }}>
+          <p className="text-[11px] font-mono mb-2" style={{ color: "var(--accent-bright)" }}>
+            Writing assistant suggestion
+          </p>
+          <p className="text-sm mb-2" style={{ color: "var(--text)", whiteSpace: "pre-wrap" }}>
+            {polishResult.polished}
+          </p>
+          {polishResult.changes.length > 0 && (
+            <ul className="text-[11px] mb-2 list-disc list-inside" style={{ color: "var(--text-faint)" }}>
+              {polishResult.changes.map((c, i) => <li key={i}>{c}</li>)}
+            </ul>
+          )}
+          {!polishResult.added_nothing && (
+            <p className="text-[11px] mb-2" style={{ color: "var(--amber)" }}>
+              ⚠ The model may have added content not in your original notes. Review carefully before using.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <button onClick={applyPolish}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium text-white transition-all"
+              style={{ background: "linear-gradient(135deg,#8b5cf6,#6d28d9)" }}>
+              Use this
+            </button>
+            <button onClick={() => setPolishResult(null)}
+              className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+              style={{ color: "var(--text-faint)", border: "1px solid var(--surface-border)" }}>
+              Discard
+            </button>
+          </div>
+        </div>
+      )}
+
+      {polishError && (
+        <p className="text-[11px] mb-2" style={{ color: "var(--red)" }}>{polishError}</p>
+      )}
+
       <input value={brief} onChange={e => setBrief(e.target.value)}
         placeholder="Assignment brief (optional)"
         disabled={locked}
@@ -117,6 +230,16 @@ export function MilestoneCard({ milestone }: { milestone: any }) {
           style={{ background: "linear-gradient(135deg,#8b5cf6,#6d28d9)", boxShadow: "0 0 16px var(--accent-glow)" }}>
           {status === "confirmed" ? "Anchored" : "Commit to chain"}
         </button>
+
+        {!locked && draft.trim() && (
+          <button onClick={polish} disabled={polishing}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium disabled:opacity-40 transition-all"
+            style={{ color: "var(--accent-bright)", border: "1px solid var(--accent-border)", background: "var(--accent-soft)" }}>
+            <FontAwesomeIcon icon={faWandMagicSparkles} className="text-[10px]" />
+            {polishing ? "Polishing…" : "Polish"}
+          </button>
+        )}
+
         {status !== "idle" && (
           <span className="flex items-center gap-1.5 text-[11px] font-mono" style={{ color: statusColor[status] }}>
             <span className="w-1.5 h-1.5 rounded-full"

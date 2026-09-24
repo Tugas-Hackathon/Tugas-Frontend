@@ -93,6 +93,46 @@ export const api = {
   rubricCheck: (bid: number, draft: string) =>
     req("POST", `/branches/${bid}/rubric-check`, { draft }),
 
+  downloadBranchPdf: async (bid: number, filename = "Proof_of_Learning.pdf") => {
+    const r = await fetch(`${BASE}/branches/${bid}/export-pdf`, {
+      headers: { Authorization: `Bearer ${token()}` },
+    })
+    if (!r.ok) throw new Error(await errorText(r))
+    const disposition = r.headers.get("Content-Disposition")
+    let downloadName = filename
+    if (disposition && disposition.includes("filename=")) {
+      const match = disposition.match(/filename="?([^";]+)"?/)
+      if (match?.[1]) downloadName = match[1]
+    }
+    const blob = await r.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = downloadName
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
+  downloadBranchDocx: async (bid: number, filename = "Proof_of_Learning.docx") => {
+    const r = await fetch(`${BASE}/branches/${bid}/export-docx`, {
+      headers: { Authorization: `Bearer ${token()}` },
+    })
+    if (!r.ok) throw new Error(await errorText(r))
+    const disposition = r.headers.get("Content-Disposition")
+    let downloadName = filename
+    if (disposition && disposition.includes("filename=")) {
+      const match = disposition.match(/filename="?([^";]+)"?/)
+      if (match?.[1]) downloadName = match[1]
+    }
+    const blob = await r.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = downloadName
+    a.click()
+    URL.revokeObjectURL(url)
+  },
+
   settings: () => req("GET", "/settings"),
   setOpenrouterKey: (key: string) => req("PUT", "/settings/openrouter", { key }),
   clearOpenrouterKey: () => req("DELETE", "/settings/openrouter"),
@@ -142,6 +182,8 @@ export const api = {
   ) => req("POST", `/milestones/${mid}/hash`, { draft, brief, rubric, ai_assist_level }),
   anchored: (mid: number, tx_hash: string) =>
     req("POST", `/milestones/${mid}/anchored`, { tx_hash }),
+  polishMilestone: (mid: number, draft: string, instruction?: string) =>
+    req("POST", `/milestones/${mid}/polish`, { draft, instruction }),
 
   ask: (sid: number, question: string) =>
     req("POST", `/subjects/${sid}/ask`, { question }),
