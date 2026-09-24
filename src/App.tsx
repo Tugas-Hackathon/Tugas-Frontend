@@ -33,9 +33,32 @@ export default function App() {
   if (!authed) {
     return (
       <div style={{ ...cssVars, background: "var(--page-bg)", minHeight: "100vh" }}
-        className="relative overflow-hidden flex flex-col items-center justify-center">
+        className="relative overflow-hidden flex flex-col justify-between p-6 sm:p-10">
         <Glows />
-        <div className="relative text-center mb-10">
+
+        {/* Top bar on landing */}
+        <header className="relative z-10 w-full max-w-5xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm text-white"
+              style={{
+                background: "linear-gradient(135deg,#8b5cf6,#6d28d9)",
+                boxShadow: "0 0 20px var(--accent-glow)",
+              }}>
+              T
+            </div>
+            <span className="font-bold tracking-tight text-base" style={{ color: "var(--text)" }}>Tugas</span>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs font-mono">
+            <span className="px-2.5 py-1 rounded-full border text-[11px]"
+              style={{ background: "var(--surface)", borderColor: "var(--surface-border)", color: "var(--text-dim)" }}>
+              BOT Chain (EVM)
+            </span>
+          </div>
+        </header>
+
+        {/* Center Hero */}
+        <div className="relative z-10 text-center my-auto py-10 max-w-lg mx-auto">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"
             style={{
               background: "linear-gradient(135deg,#8b5cf6,#6d28d9)",
@@ -47,11 +70,57 @@ export default function App() {
           <p className="text-[11px] font-mono uppercase tracking-[0.25em] mb-3" style={{ color: "var(--text-faint)" }}>
             Smart Glass OS
           </p>
-          <p className="text-sm" style={{ color: "var(--text-dim)" }}>
-            AI-powered study OS · Anchored on BOT Chain
+          <p className="text-sm mb-6" style={{ color: "var(--text-dim)" }}>
+            AI-powered study OS · Academic Proof of Learning
           </p>
+
+          <div className="relative inline-block mb-6">
+            <ConnectButton />
+          </div>
+
+          {/* Network / Partner Callout */}
+          <div className="flex items-center justify-center gap-2.5 text-xs font-mono rounded-xl py-2 px-4 mx-auto w-fit"
+            style={{ background: "var(--surface)", border: "1px solid var(--surface-border)" }}>
+            <span className="w-2 h-2 rounded-full animate-ping" style={{ background: "var(--teal)" }} />
+            <span style={{ color: "var(--text-dim)" }}>Anchored on</span>
+            <a href="https://botchain.ai/" target="_blank" rel="noopener noreferrer"
+              className="font-semibold transition-colors hover:underline" style={{ color: "var(--accent-bright)" }}>
+              BOT Chain ↗
+            </a>
+            <span style={{ color: "var(--panel-border)" }}>|</span>
+            <a href="https://scan.botchain.ai/" target="_blank" rel="noopener noreferrer"
+              className="transition-colors hover:underline" style={{ color: "var(--text-dim)" }}>
+              BOTScan ↗
+            </a>
+          </div>
         </div>
-        <div className="relative"><ConnectButton /></div>
+
+        {/* Footer */}
+        <footer className="relative z-10 w-full max-w-5xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
+          style={{ borderTop: "1px solid var(--panel-border)", color: "var(--text-faint)" }}>
+          <div className="flex items-center gap-3">
+            <span style={{ color: "var(--text-dim)" }}>Tugas OS</span>
+            <span>•</span>
+            <span>Proof of Learning Ledger</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <span style={{ color: "var(--text-dim)" }}>Powered by</span>
+            <a href="https://botchain.ai/" target="_blank" rel="noopener noreferrer"
+              className="font-medium transition-colors hover:underline flex items-center gap-1"
+              style={{ color: "var(--accent-bright)" }}>
+              <span>BOT Chain (botchain.ai)</span>
+              <span className="text-[10px]">↗</span>
+            </a>
+            <span style={{ color: "var(--panel-border)" }}>•</span>
+            <a href="https://scan.botchain.ai/" target="_blank" rel="noopener noreferrer"
+              className="font-medium transition-colors hover:underline flex items-center gap-1"
+              style={{ color: "var(--text-dim)" }}>
+              <span>BOT Chain Explorer</span>
+              <span className="text-[10px]">↗</span>
+            </a>
+          </div>
+        </footer>
       </div>
     )
   }
@@ -144,16 +213,33 @@ export function Pill({ children, tone = "accent" }: { children: React.ReactNode;
 
 function StatusBar() {
   return (
-    <footer className="shrink-0 flex items-center justify-between px-5 h-11 text-[10px] font-mono uppercase tracking-wider"
+    <footer className="shrink-0 flex items-center justify-between px-5 h-11 text-[10px] font-mono tracking-wider"
       style={{ borderTop: "1px solid var(--panel-border)", color: "var(--text-faint)" }}>
       <div className="flex items-center gap-4">
-        <span>System: Optical Glassphone v2.4</span>
-        <span className="flex items-center gap-1.5">
+        <span className="uppercase">System: Optical Glassphone v2.4</span>
+        <span className="flex items-center gap-1.5 uppercase">
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--teal)" }} />
           Latency: 18ms
         </span>
       </div>
-      <span>Tugas Smart Kernel Online</span>
+
+      {/* BOT Chain Branding & Links */}
+      <div className="flex items-center gap-3">
+        <span className="flex items-center gap-1.5" style={{ color: "var(--text-dim)" }}>
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "var(--accent-bright)" }} />
+          <span>Built on <strong className="font-semibold uppercase" style={{ color: "var(--text)" }}>BOT Chain</strong></span>
+        </span>
+        <span style={{ color: "var(--panel-border)" }}>•</span>
+        <a href="https://botchain.ai/" target="_blank" rel="noopener noreferrer"
+          className="transition-colors hover:underline" style={{ color: "var(--accent-bright)" }}>
+          botchain.ai ↗
+        </a>
+        <span style={{ color: "var(--panel-border)" }}>•</span>
+        <a href="https://scan.botchain.ai/" target="_blank" rel="noopener noreferrer"
+          className="transition-colors hover:underline" style={{ color: "var(--accent-bright)" }}>
+          BOTScan Explorer ↗
+        </a>
+      </div>
     </footer>
   )
 }

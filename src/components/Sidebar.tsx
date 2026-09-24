@@ -256,6 +256,18 @@ export function Sidebar({ view, onNavigate, onCrumb }: Props) {
           <Kbd>⌘L</Kbd>
         </button>
         <ConnectButton compact />
+        <div className="pt-1.5 px-1 flex items-center justify-between text-[10px] font-mono tracking-wide"
+          style={{ color: "var(--text-faint)" }}>
+          <a href="https://botchain.ai/" target="_blank" rel="noopener noreferrer"
+            className="transition-colors hover:underline hover:text-[var(--accent-bright)]">
+            BOT Chain ↗
+          </a>
+          <span>•</span>
+          <a href="https://scan.botchain.ai/" target="_blank" rel="noopener noreferrer"
+            className="transition-colors hover:underline hover:text-[var(--accent-bright)]">
+            BOTScan ↗
+          </a>
+        </div>
       </div>
     </aside>
   )
