@@ -187,5 +187,6 @@ export const api = {
 
   ask: (sid: number, question: string) =>
     req("POST", `/subjects/${sid}/ask`, { question }),
-
+  chatHistory: (sid: number) =>
+    req("GET", `/subjects/${sid}/chat`),
 }
